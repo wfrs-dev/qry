@@ -1,0 +1,65 @@
+version: '3'
+
+vars:
+  BinName: qry
+  SrcMain: cmd/qry/main.go
+
+tasks:
+  clean:
+    desc: "Limpia archivos generados en la compilación"
+    cmds:
+    - rm -rf ./dist
+  precommit:
+    desc: 'Tarea de validaciones del código, útil para validar el código antes de subir cambios'
+    deps: [audit]
+    cmds:
+      - |
+        if [ -z "{{.FILES}}" ]; then
+          echo "No Go files staged"
+          exit 0
+        fi
+
+        echo "Analizando..."
+
+        for file in {{.FILES}}; do
+          gofmt -w "$file"
+          golines -m 130 -w "$file"
+          git add "$file"
+        done
+
+        golangci-lint run --fast --new-from-rev=HEAD {{.FILES}}
+  audit:
+    desc: 'Realiza comprobaciones de control de calidad en el código fuente'
+    cmds:
+      - go mod tidy
+      - go mod verify
+      - govulncheck ./...
+      - go vet ./...
+      - go test ./...
+  build:
+    desc: 'Genera el binario ejecutable basandse en la configuración del sistema operativo'
+    deps: [audit]
+    vars:
+      BuildTime: '{{now | date "2006-01-02T15:04:05"}}'
+      CommitHash:
+        sh: git rev-parse --short HEAD || echo '0000000'
+      Version:
+        sh: git describe --tags --abbrev=0 || echo 'v0.0.0'
+    cmds:
+      - rm -rf ./dist/{{.GOOS}}-{{.GOARCH}}
+      - mkdir -p ./dist
+      - |
+        go build \
+          -o ./dist/{{.GOOS}}-{{.GOARCH}}/{{.BinName}}{{.Ext}} \
+          -ldflags "-s -w -X main.Version={{.Version}} -X main.BuildTime={{.BuildTime}} -X main.CommitHash={{.CommitHash}}" \
+          {{.SrcMain}}
+  build-linux:
+    desc: 'Genera el binario ejecutable para Linux'
+    cmds:
+      - task: build
+        vars: {GOOS: linux, GOARCH: amd64, Ext: ""}
+  build-windows:
+    desc: 'Genera el binario ejecutable para Windows'
+    cmds:
+      - task: build
+        vars: {GOOS: windows, GOARCH: amd64, Ext: ".exe"}
