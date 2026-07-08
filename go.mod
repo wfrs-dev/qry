@@ -5,7 +5,7 @@ go 1.25.7
 require (
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/integrii/flaggy v1.8.0
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/microsoft/go-mssqldb v1.9.8
 	golang.org/x/term v0.41.0
 )
