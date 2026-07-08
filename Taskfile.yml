@@ -53,6 +53,7 @@ tasks:
           -o ./dist/{{.GOOS}}-{{.GOARCH}}/{{.BinName}}{{.Ext}} \
           -ldflags "-s -w -X main.Version={{.Version}} -X main.BuildTime={{.BuildTime}} -X main.CommitHash={{.CommitHash}}" \
           {{.SrcMain}}
+        upx --best ./dist/{{.GOOS}}-{{.GOARCH}}/{{.BinName}}{{.Ext}}
   build-linux:
     desc: 'Genera el binario ejecutable para Linux'
     cmds:
